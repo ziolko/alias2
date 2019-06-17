@@ -1,33 +1,55 @@
 #!/usr/bin/env node
 
-const { execSync } = require("child_process");
 const fs = require("fs");
+const which = require("which");
 const path = require("path");
 
-const binDirectory = execSync("npm bin -g", { stdio: ["ignore", "pipe", "pipe"] }).toString().replace(/\n$/, "");
-const params = process.argv.slice(2).join(" ");
-const separatorPos = params.indexOf("=");
-const command = params.substring(0, separatorPos).trim();
-const argument = params.substring(separatorPos + 1).trim();
+const binDirectory = path.dirname(which.sync("alias2"));
+const command = process.argv.slice(2);
 
-if(!command) {
+const [alias, ...rest] = command.shift().split("=");
+command.unshift(...rest);
+
+if (command[0] && command[0][0] === "=") {
+  command[0] = command[0].slice(1);
+}
+
+if (!command[0]) {
+  command.shift();
+}
+
+if (!alias) {
   console.log(`Usage: alias command = alias content
   
 Easily create aliases on Windows.`);
   process.exit(0);
 }
 
-const content = `
-  @echo off
-  ${argument.trim()} %*
+function replaceArgs(input) {
+  return input.replace(/\$1/g, "%1").replace(/\$2/g, "%2").replace(/\$1/g, "%3").replace(/\$1/g, "%3").replace(/\$1/g, "%4");
+}
+
+function hasWhitespace(input) {
+  return input.indexOf(" ") !== -1 || input.indexOf("\t") !== -1;
+}
+
+const content = `@echo off\r\nrem alias2\r\n
+  ${command.map(cmd => hasWhitespace(cmd) ? `${replaceArgs(cmd)}"` : replaceArgs(cmd)).join(" ")}
 `;
 
-const commandPath = path.join(binDirectory, `${command}.bat`);
+const aliasPath = path.join(binDirectory, `${alias}.b                                                   at`);
 
-if (!argument) {
-  fs.unlinkSync(commandPath);
-  console.log(`Removed alias for command ${command}`)
+if (fs.existsSync(aliasPath) && fs.readFileSync(aliasPath, { encoding: "utf-8" }).indexOf("@echo off\nrem alias2\n") !== 0) {
+  console.error(`Error: command '${alias}' has not been created by alias2`);
+  process.exit(1);
+}
+
+if (!command) {
+  if (fs.existsSync(aliasPath)) {
+    fs.unlinkSync(aliasPath);
+  }
+  console.log(`Removed alias ${alias}`);
 } else {
-  console.log(`Created alias for command ${command}`)
-  fs.writeFileSync(commandPath, content, { encoding: "UTF-8" });
+  console.log(`Created alias ${alias}`);
+  fs.writeFileSync(aliasPath, content, { encoding: "UTF-8" });
 }
