@@ -37,7 +37,7 @@ const content = `@echo off\r\nrem alias2\r\n
   ${command.map(cmd => hasWhitespace(cmd) ? `${replaceArgs(cmd)}"` : replaceArgs(cmd)).join(" ")}
 `;
 
-const aliasPath = path.join(binDirectory, `${alias}.b                                                   at`);
+const aliasPath = path.join(binDirectory, `${alias}.bat`);
 
 if (fs.existsSync(aliasPath) && fs.readFileSync(aliasPath, { encoding: "utf-8" }).indexOf("@echo off\nrem alias2\n") !== 0) {
   console.error(`Error: command '${alias}' has not been created by alias2`);
